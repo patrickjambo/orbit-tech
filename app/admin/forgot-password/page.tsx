@@ -19,7 +19,7 @@ export default function ForgotPassword() {
     setError('');
     
     // Simulate API check against strict user requirements
-    if (email !== 'Shemaclaude2021@gmail.com' || phone !== '0783907794') {
+    if (email.toLowerCase() !== 'shemaclaude2021@gmail.com' || phone !== '0783907794') {
         setError('Verification failed. Email or phone number does not match super admin records.');
         setLoading(false);
         return;
