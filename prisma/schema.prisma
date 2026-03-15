@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String
+  category      String
+  brand         String
+  sku           String?
+  description   String   @db.Text
+  specifications Json?
+  price_rwf     Decimal
+  price_usd     Decimal?
+  images        Json?
+  in_stock      Boolean  @default(true)
+  stock_quantity Int     @default(1)
+  sold_quantity  Int     @default(0)
+  featured      Boolean  @default(false)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([category])
+  @@index([featured])
+  @@index([created_at(sort: Desc)])
+}
+
+model AdminUser {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  name          String
+  role          Role     @default(EDITOR)
+  created_at    DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  EDITOR
+}

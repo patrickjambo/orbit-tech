@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3f4f6;
+  --foreground: #1e293b;
+  --primary: #1a3c6e;
+  --accent: #0ea5e9;
+  --light-blue: #dbeafe;
+  --dark-slate: #1e293b;
+  --gray: #f3f4f6;
+  --white: #ffffff;
+  --success: #16a34a;
+  --warning: #ea580c;
+  --error: #dc2626;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-blue-light: var(--light-blue);
+  --color-slate-dark: var(--dark-slate);
+  --color-orbit-white: var(--white);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --font-sans: "Inter", "Poppins", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@layer utilities {
+  .bg-wave-gradient {
+    background: linear-gradient(-45deg, #1a3c6e, #11264c, #0ea5e9, #1a3c6e);
+    background-size: 400% 400%;
+    animation: wave-gradient 12s ease infinite;
+  }
+  
+  @keyframes wave-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .orbit-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    animation: orbit-spin 8s linear infinite;
+  }
+  
+  .orbit-ring::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background-color: #0ea5e9;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #0ea5e9;
+  }
+
+  @keyframes orbit-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+}
