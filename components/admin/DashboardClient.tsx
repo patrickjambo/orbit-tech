@@ -1,12 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Package, Tag, AlertTriangle, Activity, ShoppingCart, Archive, DollarSign, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
-import * as ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
 type DashboardData = {
@@ -30,32 +26,39 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [outOfStockModalOpen, setOutOfStockModalOpen] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      // setIsRefreshing(true);
       const res = await fetch('/api/admin/dashboard');
       if (res.ok) {
         const json = await res.json();
-        setData(json);
+        // Only update state if data actually changed to prevent React rendering overload
+        setData((prev) => JSON.stringify(prev) !== JSON.stringify(json) ? json : prev);
       }
     } catch (e) {
       console.error(e);
-    } finally {
-      // setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Refresh every 3 seconds seamlessly for real-time dashboard feel
+    // Refresh every 3s but ONLY if the browser tab is visibly open to save client/server CPU
     const interval = setInterval(() => {
-      fetchData();
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const handleExport = async (formatType: 'pdf' | 'excel', range: string) => {
     setExportMenuOpen(false);
     try {
+      // Lazy load heavy spreadsheet & PDF libraries ONLY when requested
+      const [{ default: jsPDF }, { default: autoTable }, ExcelJS, { saveAs }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+        import('exceljs'),
+        import('file-saver')
+      ]);
       const res = await fetch(`/api/admin/dashboard?exportRange=${range}`);
       const { sales } = await res.json();
 

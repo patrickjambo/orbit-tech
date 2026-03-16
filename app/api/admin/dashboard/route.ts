@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       totalProductsCount,
       lowStockCount,
       totalSoldAggr,
-      stockValueAggr,
+      stockValueResult,
       todaysSalesAggr,
       totalSalesAggr,
       recentlyAdded,
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
       db.product.count(),
       db.product.count({ where: { stock_quantity: { lte: 0 } } }), // Only actual out-of-stock items
       db.product.aggregate({ _sum: { sold_quantity: true, stock_quantity: true } }),
-      db.product.findMany({ select: { stock_quantity: true, price_rwf: true } }), // to calculate total stock value
+      db.$queryRaw`SELECT SUM(stock_quantity * price_rwf) as "totalValue" FROM "Product"`, // DB level O(1) calc
       db.saleEvent.aggregate({ where: { created_at: { gte: today } }, _sum: { price_rwf: true } }),
       db.saleEvent.aggregate({ _sum: { price_rwf: true } }),
       db.product.findMany({ orderBy: { created_at: 'desc' }, take: 6 }),
@@ -59,10 +59,7 @@ export async function GET(req: Request) {
     const itemsLeft = totalSoldAggr._sum.stock_quantity || 0;
     const itemsSold = totalSoldAggr._sum.sold_quantity || 0;
     
-    let totalStockValue = 0;
-    stockValueAggr.forEach(p => {
-      totalStockValue += p.stock_quantity * Number(p.price_rwf);
-    });
+    const totalStockValue = (stockValueResult as any[])?.[0]?.totalValue ? Number((stockValueResult as any[])[0].totalValue) : 0;
 
     const todaysRevenue = Number(todaysSalesAggr._sum.price_rwf) || 0;
     const totalRevenue = Number(totalSalesAggr._sum.price_rwf) || 0;
