@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Package, Tag, AlertTriangle, Activity, ShoppingCart, Archive, DollarSign, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
-import * as XLSX from 'xlsx-js-style';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
@@ -71,24 +72,47 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
 
       const headers = ['Date', 'Product', 'Quantity', 'Unit Price', 'Total'];
 
+      // Fetch and convert logo image to base64
+      let base64Logo = '';
+      try {
+        const res = await fetch('/logo.png');
+        const blob = await res.blob();
+        base64Logo = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.warn('Failed to load logo for export', err);
+      }
+
       if (formatType === 'pdf') {
         const doc = new jsPDF();
         
-        // Add company logo/header for PDF
-        doc.setFontSize(20);
+        if (base64Logo) {
+          try {
+            // Add Logo
+            doc.addImage(base64Logo, 'PNG', 14, 10, 25, 25); // x, y, width, height
+          } catch (e) {
+            console.warn('PDF image error', e);
+          }
+        }
+        
+        // Add company text next to logo
+        doc.setFontSize(22);
         doc.setTextColor(59, 130, 246); // Blue color for Orbit Tech
-        doc.text('Orbit Tech', 14, 20);
+        doc.text('Orbit Tech', 45, 20);
         
         doc.setFontSize(12);
         doc.setTextColor(100, 116, 139); // Slate-500
-        doc.text('Your Trusted Electronics Store', 14, 28);
+        doc.text('Your Trusted Electronics Store', 45, 28);
         
-        doc.setFontSize(16);
+        doc.setFontSize(14);
         doc.setTextColor(15, 23, 42); // Black
-        doc.text(`Sales Report - ${range.toUpperCase()}`, 14, 40);
+        doc.text(`Sales Report - ${range.toUpperCase()}`, 14, 45);
         
         autoTable(doc, {
-          startY: 45,
+          startY: 50,
           head: [headers],
           body: tableData,
           theme: 'striped',
@@ -98,75 +122,96 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
 
         doc.save(`OrbitTech-Sales-${range}.pdf`);
       } else {
-        // Build Excel data with customized header
-        const excelData = [
-          ['Orbit Tech Sales Report'], // Title row
-          [`Report Range: ${range.toUpperCase()}`], // Subtitle row
-          [`Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}`], // Date row
-          [], // Empty row
-          headers, // Table Headers
-          ...tableData
-        ];
-        
-        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Sales Report');
 
-        // Stylish title
-        if (ws['A1']) {
-          ws['A1'].s = {
-            font: { name: 'Arial', sz: 18, bold: true, color: { rgb: "3B82F6" } },
-            alignment: { vertical: "center", horizontal: "left" }
-          };
-        }
+        // Add Logo Image
+        // Set column A width for logo
+        worksheet.getColumn(1).width = 25;
         
-        if (ws['A2']) {
-          ws['A2'].s = { font: { italic: true, sz: 12, color: { rgb: "64748B" } } };
-        }
-        
-        // Add borders and bold style to header row (Row 5 - zero indexed)
-        const headerRowIndex = 4; 
-        for (let C = 0; C < headers.length; ++C) {
-          const address = XLSX.utils.encode_cell({c: C, r: headerRowIndex});
-          if(!ws[address]) continue;
-          ws[address].s = {
-            font: { bold: true, color: { rgb: "FFFFFF" } },
-            fill: { fgColor: { rgb: "3B82F6" } },
-            alignment: { vertical: "center", horizontal: "center" },
-            border: {
-              top: { style: "thin", color: { rgb: "000000" } },
-              bottom: { style: "thin", color: { rgb: "000000" } },
-              left: { style: "thin", color: { rgb: "000000" } },
-              right: { style: "thin", color: { rgb: "000000" } }
-            }
-          };
+        if (base64Logo) {
+          const imageId = workbook.addImage({
+            base64: base64Logo,
+            extension: 'png',
+          });
+          // Add image covering A1 to A4
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 } as any,
+            br: { col: 1, row: 4 } as any
+          });
         }
 
-        // Add regular border to data rows
-        for (let R = 5; R <= excelData.length; ++R) {
-          for (let C = 0; C < headers.length; ++C) {
-            const address = XLSX.utils.encode_cell({c: C, r: R - 1});
-            if(!ws[address]) continue;
-            ws[address].s = {
-              border: {
-                top: { style: "dotted", color: { rgb: "CCCCCC" } },
-                bottom: { style: "dotted", color: { rgb: "CCCCCC" } },
-              },
-              alignment: { vertical: "center" }
+        // Merge B,C,D,E for headers
+        worksheet.mergeCells('B1:E1');
+        worksheet.mergeCells('B2:E2');
+        worksheet.mergeCells('B3:E3');
+
+        // Row 1 Title
+        const titleCell = worksheet.getCell('B1');
+        titleCell.value = 'Orbit Tech Sales Report';
+        titleCell.font = { name: 'Arial', size: 22, bold: true, color: { argb: 'FF3B82F6' } };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(1).height = 30;
+
+        // Row 2 Subtitle
+        const rangeCell = worksheet.getCell('B2');
+        rangeCell.value = `Report Range: ${range.toUpperCase()}`;
+        rangeCell.font = { name: 'Arial', size: 14, bold: true, italic: true, color: { argb: 'FF64748B' } };
+        rangeCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(2).height = 25;
+
+        // Row 3 Date
+        const dateCell = worksheet.getCell('B3');
+        dateCell.value = `Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}`;
+        dateCell.font = { name: 'Arial', size: 12, bold: true };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(3).height = 20;
+        
+        // Blank row 4
+        worksheet.getRow(4).height = 15;
+
+        // Table Headers (Row 5)
+        const headerRow = worksheet.getRow(5);
+        headers.forEach((header, index) => {
+          const cell = headerRow.getCell(index + 1);
+          cell.value = header;
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF3B82F6' }
+          };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+        headerRow.height = 25;
+
+        // Data Rows
+        tableData.forEach((rowData: any, index: number) => {
+          const row = worksheet.addRow(rowData);
+          row.eachCell((cell) => {
+            cell.alignment = { vertical: 'middle' };
+            cell.border = {
+              top: { style: 'dotted' },
+              bottom: { style: 'dotted' }
             };
-          }
-        }
-        
-        // Improve column widths
-        ws['!cols'] = [
-          { wch: 18 }, // Date
-          { wch: 35 }, // Product
-          { wch: 10 }, // Quantity
-          { wch: 18 }, // Unit Price
-          { wch: 20 }, // Total
-        ];
-        
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sales");
-        XLSX.writeFile(wb, `OrbitTech-Sales-${range}.xlsx`);
+          });
+        });
+
+        // Set remaining column widths
+        worksheet.getColumn(2).width = 40; // Product
+        worksheet.getColumn(3).width = 15; // Quantity
+        worksheet.getColumn(4).width = 20; // Unit Price
+        worksheet.getColumn(5).width = 25; // Total
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `OrbitTech-Sales-${range}.xlsx`);
       }
     } catch (error) {
       console.error('Export failed:', error);
