@@ -44,10 +44,10 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
   };
 
   useEffect(() => {
-    // Refresh every 10 seconds silently
+    // Refresh every 3 seconds seamlessly for real-time dashboard feel
     const interval = setInterval(() => {
       fetchData();
-    }, 10000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 

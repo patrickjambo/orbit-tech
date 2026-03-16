@@ -19,13 +19,25 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         return NextResponse.json({ error: 'Out of stock' }, { status: 400 });
     }
 
-    const updated = await db.product.update({
-      where: { id },
-      data: {
-        stock_quantity: existing.stock_quantity - 1,
-        sold_quantity: existing.sold_quantity + 1,
-        in_stock: existing.stock_quantity - 1 > 0
-      }
+    const updated = await db.$transaction(async (prisma) => {
+      // Create the sale event to track revenue and history
+      await prisma.saleEvent.create({
+        data: {
+          productId: existing.id,
+          quantity: 1,
+          price_rwf: existing.price_rwf
+        }
+      });
+
+      // Update product inventory and sold counters
+      return await prisma.product.update({
+        where: { id },
+        data: {
+          stock_quantity: existing.stock_quantity - 1,
+          sold_quantity: existing.sold_quantity + 1,
+          in_stock: existing.stock_quantity - 1 > 0
+        }
+      });
     });
 
     revalidatePath('/', 'layout');
