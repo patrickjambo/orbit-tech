@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import ProductForm from "@/components/admin/ProductForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import db from "@/lib/db";
 
 export default async function NewProductPage() {
   const session = await getServerSession(authOptions);
@@ -11,6 +12,12 @@ export default async function NewProductPage() {
   if (!session) {
     redirect('/admin/login');
   }
+
+  const allProducts = await db.product.findMany({
+    select: { name: true, brand: true }
+  });
+  const uniqueNames = Array.from(new Set(allProducts.map(p => p.name)));
+  const uniqueBrands = Array.from(new Set(allProducts.map(p => p.brand)));
 
   return (
     <div>
@@ -24,7 +31,7 @@ export default async function NewProductPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-        <ProductForm />
+        <ProductForm suggestionData={{ names: uniqueNames, brands: uniqueBrands }} />
       </div>
     </div>
   );

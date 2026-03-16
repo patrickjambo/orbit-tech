@@ -12,6 +12,12 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
   const product = await db.product.findUnique({ where: { id: params.id } });
   if (!product) return redirect('/admin/products');
 
+  const allProducts = await db.product.findMany({
+    select: { name: true, brand: true }
+  });
+  const uniqueNames = Array.from(new Set(allProducts.map(p => p.name)));
+  const uniqueBrands = Array.from(new Set(allProducts.map(p => p.brand)));
+
   // serialize product to plain object (remove Date instances)
   const initialData = {
     id: product.id,
@@ -33,7 +39,10 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
     <div>
       <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
       {/* ProductForm is a client component and accepts initialData */}
-      <ProductForm initialData={initialData} />
+      <ProductForm 
+        initialData={initialData} 
+        suggestionData={{ names: uniqueNames, brands: uniqueBrands }}
+      />
     </div>
   );
 }

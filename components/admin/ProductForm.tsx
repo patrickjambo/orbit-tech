@@ -22,7 +22,13 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-export default function ProductForm({ initialData }: { initialData?: Record<string, unknown> }) {
+export default function ProductForm({ 
+  initialData, 
+  suggestionData 
+}: { 
+  initialData?: Record<string, unknown>,
+  suggestionData?: { names: string[], brands: string[] }
+}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -145,9 +151,17 @@ export default function ProductForm({ initialData }: { initialData?: Record<stri
             <label className="block text-sm font-medium text-slate-700 mb-2">Product Name *</label>
             <input 
               {...register('name')}
+              list="product-names"
               className="w-full px-4 py-2.5 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="e.g. Dell XPS 15 9530"
             />
+            {suggestionData?.names && (
+              <datalist id="product-names">
+                {suggestionData.names.map(name => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            )}
             {errors.name && <p className="text-error text-sm mt-1">{errors.name.message}</p>}
           </div>
 
@@ -167,9 +181,17 @@ export default function ProductForm({ initialData }: { initialData?: Record<stri
               <label className="block text-sm font-medium text-slate-700 mb-2">Brand *</label>
               <input 
                 {...register('brand')}
+                list="product-brands"
                 className="w-full px-4 py-2.5 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g. Dell"
               />
+              {suggestionData?.brands && (
+                <datalist id="product-brands">
+                  {suggestionData.brands.map(brand => (
+                    <option key={brand} value={brand} />
+                  ))}
+                </datalist>
+              )}
               {errors.brand && <p className="text-error text-sm mt-1">{errors.brand.message}</p>}
             </div>
           </div>
