@@ -2,37 +2,16 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import db from '@/lib/db';
-import fs from 'fs/promises';
-import path from 'path';
+// fs and path removed to support serverless environment
 import { revalidatePath } from 'next/cache';
-
-function dataUrlToBuffer(dataUrl: string) {
-  const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
-  if (!match) return null;
-  const mime = match[1];
-  const b64 = match[2];
-  const buffer = Buffer.from(b64, 'base64');
-  return { buffer, mime };
-}
 
 async function saveBase64Images(images: string[] | undefined) {
   if (!images || images.length === 0) return [];
-  const outDir = path.join(process.cwd(), 'public', 'uploads');
-  await fs.mkdir(outDir, { recursive: true });
   const saved: string[] = [];
   for (const img of images) {
     if (typeof img !== 'string') continue;
-    if (img.startsWith('http') || img.startsWith('/uploads/')) {
-      saved.push(img);
-      continue;
-    }
-    const parsed = dataUrlToBuffer(img);
-    if (!parsed) continue;
-    const ext = parsed.mime.split('/')[1] || 'png';
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const filePath = path.join(outDir, fileName);
-    await fs.writeFile(filePath, parsed.buffer);
-    saved.push(`/uploads/${fileName}`);
+    // On Vercel, the filesystem is read-only. We save the Base64 Data URL directly to PostgreSQL.
+    saved.push(img);
   }
   return saved;
 }
@@ -60,12 +39,8 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
 
     // remove images flagged for deletion
     if (Array.isArray(body.removeImages) && body.removeImages.length) {
-      for (const url of body.removeImages) {
-        if (typeof url === 'string' && url.startsWith('/uploads/')) {
-          const fp = path.join(process.cwd(), 'public', url.replace(/^\//, ''));
-          try { await fs.unlink(fp); } catch (e) { /* ignore */ }
-        }
-      }
+      // In a real cloud setup, you would delete them from Cloudinary/S3 here.
+      // Since we just save base64 directly to the DB, they will simply be overwritten.
     }
 
   const existingImages = Array.isArray(existing.images) ? (existing.images as string[]) : [];
@@ -109,14 +84,9 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     const existing = await db.product.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    // delete local uploaded images
+    // delete images
     if (Array.isArray(existing.images)) {
-      for (const url of existing.images) {
-        if (typeof url === 'string' && url.startsWith('/uploads/')) {
-          const fp = path.join(process.cwd(), 'public', url.replace(/^\//, ''));
-          try { await fs.unlink(fp); } catch (e) { /* ignore */ }
-        }
-      }
+      // Similarly, if you used a cloud provider, send delete requests here.
     }
 
     await db.product.delete({ where: { id } });

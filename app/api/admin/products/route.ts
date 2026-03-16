@@ -2,38 +2,18 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import db from '@/lib/db';
-import fs from 'fs/promises';
-import path from 'path';
+// fs and path removed due to read-only Vercel environment
 import { revalidatePath } from 'next/cache';
-
-function dataUrlToBuffer(dataUrl: string) {
-  const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
-  if (!match) return null;
-  const mime = match[1];
-  const b64 = match[2];
-  const buffer = Buffer.from(b64, 'base64');
-  return { buffer, mime };
-}
 
 async function saveBase64Images(images: string[] | undefined) {
   if (!images || images.length === 0) return [];
-  const outDir = path.join(process.cwd(), 'public', 'uploads');
-  await fs.mkdir(outDir, { recursive: true });
   const saved: string[] = [];
   for (const img of images) {
     if (typeof img !== 'string') continue;
-    // If already a remote or local URL, keep as-is
-    if (img.startsWith('http') || img.startsWith('/uploads/')) {
-      saved.push(img);
-      continue;
-    }
-    const parsed = dataUrlToBuffer(img);
-    if (!parsed) continue;
-    const ext = parsed.mime.split('/')[1] || 'png';
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const filePath = path.join(outDir, fileName);
-    await fs.writeFile(filePath, parsed.buffer);
-    saved.push(`/uploads/${fileName}`);
+    // On Vercel, the filesystem is read-only. 
+    // Without AWS S3 or Cloudinary, the most robust immediate solution 
+    // is to store the actual Base64 Data URL directly into the Neon Database JSON.
+    saved.push(img);
   }
   return saved;
 }
