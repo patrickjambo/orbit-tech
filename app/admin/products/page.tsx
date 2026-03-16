@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import Link from 'next/link';
 import Image from "next/image";
+import { ChevronLeft } from 'lucide-react';
 import AdminRowActions from '@/components/admin/AdminRowActions';
 import SellButton from '@/components/admin/SellButton';
 
@@ -20,6 +21,11 @@ export default async function AdminProducts() {
 
   return (
     <div>
+      <div className="mb-4">
+        <Link href="/admin/dashboard" className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-primary transition-colors">
+          <ChevronLeft size={16} className="mr-1" /> Back to Dashboard
+        </Link>
+      </div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-dark-slate">Product Catalog</h1>
         <Link href="/admin/products/new" className="bg-primary hover:bg-opacity-90 text-white px-5 py-2.5 rounded-md font-medium transition-colors">

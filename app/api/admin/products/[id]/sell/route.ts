@@ -40,7 +40,8 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       });
     });
 
-    revalidatePath('/', 'layout');
+    revalidatePath('/admin/products');
+    revalidatePath('/admin/dashboard');
 
     return NextResponse.json(updated);
   } catch (e) {

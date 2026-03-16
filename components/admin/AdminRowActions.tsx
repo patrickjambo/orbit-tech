@@ -18,10 +18,11 @@ export default function AdminRowActions({ id, stock }: { id: string, stock?: num
     try {
       const res = await fetch(`/api/admin/products/${id}/sell`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to sell');
-      router.refresh();
+      React.startTransition(() => {
+        router.refresh();
+      });
     } catch (err) {
       console.error(err);
-      alert('Failed to mark as sold.');
     } finally {
       setSelling(false);
     }

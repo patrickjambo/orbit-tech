@@ -9,18 +9,19 @@ export default function SellButton({ id, disabled }: { id: string, disabled: boo
   const [loading, setLoading] = useState(false);
 
   const handleSell = async () => {
-    if (!confirm('Mark 1 item as sold?')) return;
-    
     setLoading(true);
+    // Optimistic UI pre-refresh
     try {
       const res = await fetch(`/api/admin/products/${id}/sell`, { method: 'POST' });
       if (!res.ok) {
         throw new Error('Failed to mark as sold');
       }
-      router.refresh();
+      // Tell Next.js to start background refresh without blocking
+      React.startTransition(() => {
+        router.refresh();
+      });
     } catch (err) {
       console.error(err);
-      alert('Error updating stock');
     } finally {
       setLoading(false);
     }
