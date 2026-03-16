@@ -7,11 +7,14 @@ import { useSearchParams } from 'next/navigation';
 
 const categories = [
   { id: 'all', name: 'All Products' },
-  { id: 'computers', name: 'Computers & Main Devices' },
-  { id: 'displays', name: 'Display & Output' },
-  { id: 'networking', name: 'Networking Devices' },
-  { id: 'security', name: 'Security & Surveillance' },
-  { id: 'accessories', name: 'Accessories' }
+  { id: 'Computers & Main Devices', name: 'Computers & Main Devices' },
+  { id: 'Display & Output Devices', name: 'Display & Output Devices' },
+  { id: 'Input Devices', name: 'Input Devices & Accessories' },
+  { id: 'Networking Devices', name: 'Networking Devices' },
+  { id: 'Storage Devices', name: 'Storage Devices' },
+  { id: 'Power & Protection', name: 'Power & Protection' },
+  { id: 'CCTV & Surveillance Systems', name: 'CCTV & Surveillance' },
+  { id: 'Security & Access Control', name: 'Security & Access Control' },
 ];
 
 type SerializedProduct = {

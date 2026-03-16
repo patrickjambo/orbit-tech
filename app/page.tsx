@@ -4,10 +4,10 @@ import { ShieldCheck, PenTool, Wrench, Package, Cpu, Monitor, Wifi, Camera } fro
 
 export default function Home() {
   const categories = [
-    { name: 'Laptops & Computers', icon: <Cpu className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'computers', desc: 'Powerful machines for all needs.' },
-    { name: 'Monitors & Displays', icon: <Monitor className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'displays', desc: 'Crystal clear output.' },
-    { name: 'Networking', icon: <Wifi className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'networking', desc: 'Stay connected everywhere.' },
-    { name: 'CCTV & Security', icon: <Camera className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'security', desc: 'Protect what matters most.' },
+    { name: 'Laptops & Computers', icon: <Cpu className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'Computers & Main Devices', desc: 'Powerful machines for all needs.' },
+    { name: 'Monitors & Displays', icon: <Monitor className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'Display & Output Devices', desc: 'Crystal clear output.' },
+    { name: 'Networking', icon: <Wifi className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'Networking Devices', desc: 'Stay connected everywhere.' },
+    { name: 'CCTV & Security', icon: <Camera className="w-8 h-8 md:w-10 md:h-10 text-primary" />, slug: 'CCTV & Surveillance Systems', desc: 'Protect what matters most.' },
   ];
 
   const trustFeatures = [
