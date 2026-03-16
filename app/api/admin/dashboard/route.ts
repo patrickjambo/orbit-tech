@@ -42,16 +42,18 @@ export async function GET(req: Request) {
       todaysSalesAggr,
       totalSalesAggr,
       recentlyAdded,
-      recentSales
+      recentSales,
+      outOfStockItems
     ] = await Promise.all([
       db.product.count(),
-      db.product.count({ where: { stock_quantity: { lte: 5 } } }),
+      db.product.count({ where: { stock_quantity: { lte: 0 } } }), // Only actual out-of-stock items
       db.product.aggregate({ _sum: { sold_quantity: true, stock_quantity: true } }),
       db.product.findMany({ select: { stock_quantity: true, price_rwf: true } }), // to calculate total stock value
       db.saleEvent.aggregate({ where: { created_at: { gte: today } }, _sum: { price_rwf: true } }),
       db.saleEvent.aggregate({ _sum: { price_rwf: true } }),
       db.product.findMany({ orderBy: { created_at: 'desc' }, take: 6 }),
-      db.saleEvent.findMany({ include: { product: true }, orderBy: { created_at: 'desc' }, take: 6 })
+      db.saleEvent.findMany({ include: { product: true }, orderBy: { created_at: 'desc' }, take: 6 }),
+      db.product.findMany({ where: { stock_quantity: { lte: 0 } }, orderBy: { name: 'asc' }, select: { id: true, name: true, sku: true, stock_quantity: true, category: true } })
     ]);
 
     const itemsLeft = totalSoldAggr._sum.stock_quantity || 0;
@@ -76,7 +78,8 @@ export async function GET(req: Request) {
         totalProductsCount
       },
       recentlyAdded,
-      recentSales
+      recentSales,
+      outOfStockItems
     });
   } catch (error) {
     console.error('Dashboard Stats Error:', error);

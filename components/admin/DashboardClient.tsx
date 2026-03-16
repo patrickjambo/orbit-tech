@@ -21,12 +21,14 @@ type DashboardData = {
   };
   recentlyAdded: any[];
   recentSales: any[];
+  outOfStockItems: any[];
 };
 
 export default function DashboardClient({ initialData }: { initialData: DashboardData }) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [outOfStockModalOpen, setOutOfStockModalOpen] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -286,7 +288,15 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
       {/* 6 Real-time Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {cards.map((stat, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow relative overflow-hidden">
+          <div 
+            key={idx} 
+            className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow relative overflow-hidden ${stat.title === 'Low Stock Alerts' ? 'cursor-pointer hover:bg-red-50' : ''}`}
+            onClick={() => {
+              if (stat.title === 'Low Stock Alerts') {
+                setOutOfStockModalOpen(true);
+              }
+            }}
+          >
             {stat.title === 'Low Stock Alerts' && data.stats.lowStockCount > 0 && (
               <span className="absolute top-0 right-0 w-2 h-full bg-red-500 animate-pulse"></span>
             )}
@@ -364,6 +374,60 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
         </div>
 
       </div>
+
+      {/* Out of Stock Modal */}
+      {outOfStockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+            <div className="p-5 border-b flex justify-between items-center bg-red-50">
+              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+                <AlertTriangle /> Out of Stock Items ({data.outOfStockItems?.length || 0})
+              </h2>
+              <button 
+                onClick={() => setOutOfStockModalOpen(false)}
+                className="text-gray-500 hover:text-black font-bold p-2 text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-5">
+              {!data.outOfStockItems || data.outOfStockItems.length === 0 ? (
+                <p className="text-center text-gray-500 py-10">No items are currently out of stock. Great job!</p>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-sm text-gray-600 border-b">
+                      <th className="p-3">Product Name</th>
+                      <th className="p-3">Category</th>
+                      <th className="p-3">SKU</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.outOfStockItems.map((item) => (
+                      <tr key={item.id} className="border-b hover:bg-gray-50 text-sm">
+                        <td className="p-3 font-medium text-dark-slate">{item.name}</td>
+                        <td className="p-3 text-gray-500">{item.category}</td>
+                        <td className="p-3 text-gray-400">{item.sku || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50 flex justify-end">
+              <button 
+                onClick={() => setOutOfStockModalOpen(false)}
+                className="px-5 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
