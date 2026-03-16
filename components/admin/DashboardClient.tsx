@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Package, Tag, AlertTriangle, Activity, ShoppingCart, Archive, DollarSign, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
 type DashboardData = {
@@ -73,17 +73,97 @@ export default function DashboardClient({ initialData }: { initialData: Dashboar
 
       if (formatType === 'pdf') {
         const doc = new jsPDF();
-        doc.text(`Sales Report - ${range.toUpperCase()}`, 14, 15);
         
-        (doc as any).autoTable({
-          startY: 20,
+        // Add company logo/header for PDF
+        doc.setFontSize(20);
+        doc.setTextColor(59, 130, 246); // Blue color for Orbit Tech
+        doc.text('Orbit Tech', 14, 20);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100, 116, 139); // Slate-500
+        doc.text('Your Trusted Electronics Store', 14, 28);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(15, 23, 42); // Black
+        doc.text(`Sales Report - ${range.toUpperCase()}`, 14, 40);
+        
+        autoTable(doc, {
+          startY: 45,
           head: [headers],
           body: tableData,
+          theme: 'striped',
+          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
         });
 
         doc.save(`OrbitTech-Sales-${range}.pdf`);
       } else {
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...tableData]);
+        // Build Excel data with customized header
+        const excelData = [
+          ['Orbit Tech Sales Report'], // Title row
+          [`Report Range: ${range.toUpperCase()}`], // Subtitle row
+          [`Generated on: ${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}`], // Date row
+          [], // Empty row
+          headers, // Table Headers
+          ...tableData
+        ];
+        
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+        // Stylish title
+        if (ws['A1']) {
+          ws['A1'].s = {
+            font: { name: 'Arial', sz: 18, bold: true, color: { rgb: "3B82F6" } },
+            alignment: { vertical: "center", horizontal: "left" }
+          };
+        }
+        
+        if (ws['A2']) {
+          ws['A2'].s = { font: { italic: true, sz: 12, color: { rgb: "64748B" } } };
+        }
+        
+        // Add borders and bold style to header row (Row 5 - zero indexed)
+        const headerRowIndex = 4; 
+        for (let C = 0; C < headers.length; ++C) {
+          const address = XLSX.utils.encode_cell({c: C, r: headerRowIndex});
+          if(!ws[address]) continue;
+          ws[address].s = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "3B82F6" } },
+            alignment: { vertical: "center", horizontal: "center" },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          };
+        }
+
+        // Add regular border to data rows
+        for (let R = 5; R <= excelData.length; ++R) {
+          for (let C = 0; C < headers.length; ++C) {
+            const address = XLSX.utils.encode_cell({c: C, r: R - 1});
+            if(!ws[address]) continue;
+            ws[address].s = {
+              border: {
+                top: { style: "dotted", color: { rgb: "CCCCCC" } },
+                bottom: { style: "dotted", color: { rgb: "CCCCCC" } },
+              },
+              alignment: { vertical: "center" }
+            };
+          }
+        }
+        
+        // Improve column widths
+        ws['!cols'] = [
+          { wch: 18 }, // Date
+          { wch: 35 }, // Product
+          { wch: 10 }, // Quantity
+          { wch: 18 }, // Unit Price
+          { wch: 20 }, // Total
+        ];
+        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Sales");
         XLSX.writeFile(wb, `OrbitTech-Sales-${range}.xlsx`);
