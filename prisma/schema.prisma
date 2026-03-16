@@ -27,6 +27,7 @@ model Product {
   featured      Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
+  sales         SaleEvent[]
 
   @@index([category])
   @@index([featured])
@@ -45,4 +46,15 @@ model AdminUser {
 enum Role {
   SUPER_ADMIN
   EDITOR
+}
+
+model SaleEvent {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int
+  price_rwf   Decimal
+  created_at  DateTime @default(now())
+
+  @@index([created_at])
 }
